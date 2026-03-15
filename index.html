@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse grammaticale – Niveaux avec correction</title>
+<style>
+body{font-family:Arial;background:#f4f4f4;margin:0;}
+header{background:#4CAF50;color:white;text-align:center;padding:20px;}
+.container{max-width:900px;margin:auto;background:white;padding:25px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1);margin-top:20px;}
+.progress-container{background:#ddd;border-radius:10px;margin-bottom:20px;}
+.progress-bar{height:20px;width:0%;background:#4CAF50;border-radius:10px;transition:0.4s;}
+.question{font-size:20px;margin-bottom:15px;}
+.option{display:block;padding:12px;margin:8px 0;background:#4CAF50;color:white;border-radius:6px;cursor:pointer;}
+.option:hover{background:#3e8e41;}
+.feedback{margin-top:15px;font-weight:bold;font-size:18px;}
+.score{margin-top:10px;font-size:18px;}
+button{margin-top:20px;padding:12px 18px;font-size:16px;cursor:pointer;}
+.hidden{display:none;}
+h2.level-title{margin-top:0;color:#4CAF50;}
+.correct{color:green;}
+.incorrect{color:red;}
+</style>
+</head>
+<body>
+<header>
+<h1>Analyse grammaticale – Entraînement avec correction</h1>
+<p>Classe de 6P</p>
+</header>
+<div class="container">
+<div class="progress-container">
+  <div id="progressBar" class="progress-bar"></div>
+</div>
+
+<div id="quiz">
+  <h2 id="levelTitle" class="level-title"></h2>
+  <div id="question" class="question"></div>
+  <div id="options"></div>
+  <div id="feedback" class="feedback"></div>
+  <div class="score">
+    Score : <span id="score">0</span> / <span id="totalQuestions">0</span>
+  </div>
+</div>
+
+<div id="endScreen" class="hidden">
+<h2>🎉 Exercice terminé</h2>
+<p id="finalScore"></p>
+<div id="detailedCorrection"></div>
+<button onclick="restartQuiz()">Recommencer</button>
+</div>
+</div>
+
+<script>
+// Niveaux avec phrases longues et différents temps
+const levels=[
+  { title:"Niveau 1 : Repérer le verbe conjugué", questions:[
+    {question:"Le chat qui se repose sur le canapé dort profondément toute la matinée.", options:["dort","se repose","chat","canapé"], answer:"dort", explanation:"Le verbe conjugué est 'dort', il indique l'action du chat."},
+    {question:"Les oiseaux qui s'étaient envolés tôt le matin chantent à nouveau dans l'arbre.", options:["chantent","s'étaient envolés","oiseaux","arbre"], answer:"chantent", explanation:"Le verbe conjugué est 'chantent', c'est l'action qui se déroule maintenant."},
+    {question:"Paul a mangé une pomme avant de partir à l'école.", options:["a mangé","partir","Paul","pomme"], answer:"a mangé", explanation:"Le verbe conjugué est 'a mangé', au passé composé."},
+    {question:"Julie lisait un long roman quand le téléphone a sonné.", options:["lisait","a sonné","Julie","roman"], answer:"lisait", explanation:"Le verbe conjugué principal est 'lisait', imparfait."},
+    {question:"Les enfants joueront au parc demain après-midi.", options:["joueront","Les enfants","parc","demain"], answer:"joueront", explanation:"Le verbe conjugué est 'joueront', futur simple."},
+    {question:"Le chien courait dans le jardin pendant que le vent soufflait fort.", options:["courait","soufflait","chien","jardin"], answer:"courait", explanation:"Le verbe conjugué principal est 'courait', imparfait."},
+    {question:"Marie a écrit une lettre détaillée à sa grand-mère hier soir.", options:["a écrit","Marie","lettre","hier"], answer:"a écrit", explanation:"Le verbe conjugué est 'a écrit', passé composé."},
+    {question:"Les élèves lisent attentivement les consignes avant de commencer l'exercice.", options:["lisent","commencer","élèves","consignes"], answer:"lisent", explanation:"Le verbe conjugué est 'lisent', présent."},
+    {question:"Le professeur expliquera la leçon de grammaire aux élèves demain.", options:["expliquera","professeur","leçon","demain"], answer:"expliquera", explanation:"Le verbe conjugué est 'expliquera', futur simple."},
+    {question:"Mon frère chantait une chanson tout en jouant du piano.", options:["chantait","jouant","frère","piano"], answer:"chantait", explanation:"Le verbe conjugué est 'chantait', imparfait."}
+  ]},
+  { title:"Niveau 2 : Repérer le sujet", questions:[
+    {question:"Le chat qui se repose sur le canapé dort profondément toute la matinée.", options:["Le chat","dort","canapé","la matinée"], answer:"Le chat", explanation:"Le sujet de la phrase est 'Le chat', c'est celui qui fait l'action."},
+    {question:"Les oiseaux qui s'étaient envolés tôt le matin chantent à nouveau dans l'arbre.", options:["Les oiseaux","chantent","arbre","le matin"], answer:"Les oiseaux", explanation:"Le sujet est 'Les oiseaux', ce sont eux qui chantent."},
+    {question:"Paul a mangé une pomme avant de partir à l'école.", options:["Paul","a mangé","pomme","école"], answer:"Paul", explanation:"Le sujet est 'Paul', celui qui a mangé."},
+    {question:"Julie lisait un long roman quand le téléphone a sonné.", options:["Julie","lisait","roman","téléphone"], answer:"Julie", explanation:"Le sujet est 'Julie', c'est elle qui lisait."},
+    {question:"Les enfants joueront au parc demain après-midi.", options:["Les enfants","joueront","parc","demain"], answer:"Les enfants", explanation:"Le sujet est 'Les enfants', ils joueront."},
+    {question:"Le chien courait dans le jardin pendant que le vent soufflait fort.", options:["Le chien","courait","vent","jardin"], answer:"Le chien", explanation:"Le sujet principal est 'Le chien'."},
+    {question:"Marie a écrit une lettre détaillée à sa grand-mère hier soir.", options:["Marie","a écrit","lettre","grand-mère"], answer:"Marie", explanation:"Le sujet est 'Marie'."},
+    {question:"Les élèves lisent attentivement les consignes avant de commencer l'exercice.", options:["Les élèves","lisent","consignes","exercice"], answer:"Les élèves", explanation:"Le sujet est 'Les élèves'."},
+    {question:"Le professeur expliquera la leçon de grammaire aux élèves demain.", options:["Le professeur","expliquera","leçon","élèves"], answer:"Le professeur", explanation:"Le sujet est 'Le professeur'."},
+    {question:"Mon frère chantait une chanson tout en jouant du piano.", options:["Mon frère","chantait","chanson","piano"], answer:"Mon frère", explanation:"Le sujet est 'Mon frère'."}
+  ]},
+  { title:"Niveau 3 : Repérer le prédicat", questions:[
+    {question:"Le chat qui se repose sur le canapé dort profondément toute la matinée.", options:["dort profondément toute la matinée","Le chat","canapé","matinée"], answer:"dort profondément toute la matinée", explanation:"Le prédicat correspond à tout ce qui est dit du sujet : 'dort profondément toute la matinée'."},
+    {question:"Les oiseaux qui s'étaient envolés tôt le matin chantent à nouveau dans l'arbre.", options:["chantent à nouveau dans l'arbre","Les oiseaux","matin","arbre"], answer:"chantent à nouveau dans l'arbre", explanation:"Le prédicat est 'chantent à nouveau dans l'arbre'."},
+    {question:"Paul a mangé une pomme avant de partir à l'école.", options:["a mangé une pomme avant de partir à l'école","Paul","pomme","école"], answer:"a mangé une pomme avant de partir à l'école", explanation:"Le prédicat est 'a mangé une pomme avant de partir à l'école'."},
+    {question:"Julie lisait un long roman quand le téléphone a sonné.", options:["lisait un long roman quand le téléphone a sonné","Julie","roman","téléphone"], answer:"lisait un long roman quand le téléphone a sonné", explanation:"Le prédicat est 'lisait un long roman quand le téléphone a sonné'."},
+    {question:"Les enfants joueront au parc demain après-midi.", options:["joueront au parc demain après-midi","Les enfants","parc","demain"], answer:"joueront au parc demain après-midi", explanation:"Le prédicat est 'joueront au parc demain après-midi'."},
+    {question:"Le chien courait dans le jardin pendant que le vent soufflait fort.", options:["courait dans le jardin pendant que le vent soufflait fort","chien","jardin","vent"], answer:"courait dans le jardin pendant que le vent soufflait fort", explanation:"Le prédicat est 'courait dans le jardin pendant que le vent soufflait fort'."},
+    {question:"Marie a écrit une lettre détaillée à sa grand-mère hier soir.", options:["a écrit une lettre détaillée à sa grand-mère hier soir","Marie","lettre","grand-mère"], answer:"a écrit une lettre détaillée à sa grand-mère hier soir", explanation:"Le prédicat est 'a écrit une lettre détaillée à sa grand-mère hier soir'."},
+    {question:"Les élèves lisent attentivement les consignes avant de commencer l'exercice.", options:["lisent attentivement les consignes avant de commencer l'exercice","Les élèves","consignes","exercice"], answer:"lisent attentivement les consignes avant de commencer l'exercice", explanation:"Le prédicat est 'lisent attentivement les consignes avant de commencer l'exercice'."},
+    {question:"Le professeur expliquera la leçon de grammaire aux élèves demain.", options:["expliquera la leçon de grammaire aux élèves demain","professeur","leçon","élèves"], answer:"expliquera la leçon de grammaire aux élèves demain", explanation:"Le prédicat est 'expliquera la leçon de grammaire aux élèves demain'."},
+    {question:"Mon frère chantait une chanson tout en jouant du piano.", options:["chantait une chanson tout en jouant du piano","Mon frère","chanson","piano"], answer:"chantait une chanson tout en jouant du piano", explanation:"Le prédicat est 'chantait une chanson tout en jouant du piano'."}
+  ]},
+  { title:"Niveau 4 : Complément de verbe direct et indirect", questions:[
+    {question:"Paul donne un livre intéressant à Alice pour son anniversaire. Quel est le CVD ?", options:["un livre intéressant","à Alice","donne","Paul"], answer:"un livre intéressant", explanation:"Le complément d'objet direct est 'un livre intéressant', c'est ce qui est donné."},
+    {question:"Paul donne un livre intéressant à Alice pour son anniversaire. Quel est le CVI ?", options:["à Alice","un livre","donne","Paul"], answer:"à Alice", explanation:"Le complément d'objet indirect est 'à Alice', c'est à qui le livre est donné."},
+    {question:"Julie mange une pomme rouge dans le jardin. Quel est le CVD ?", options:["une pomme rouge","Julie","mange","jardin"], answer:"une pomme rouge", explanation:"CVD = 'une pomme rouge'."},
+    {question:"Marie a écrit une longue lettre à sa grand-mère hier soir. Quel est le CVD ?", options:["une longue lettre","Marie","a écrit","grand-mère"], answer:"une longue lettre", explanation:"CVD = 'une longue lettre'."},
+    {question:"Le professeur explique la leçon de grammaire aux élèves attentivement. Quel est le CVI ?", options:["aux élèves","le professeur","explique","leçon"], answer:"aux élèves", explanation:"CVI = 'aux élèves'."},
+    {question:"Les élèves lisent un texte intéressant en silence. Quel est le CVD ?", options:["un texte intéressant","Les élèves","lisent","en silence"], answer:"un texte intéressant", explanation:"CVD = 'un texte intéressant'."},
+    {question:"Mon frère chante une belle chanson pour sa sœur. Quel est le CVD ?", options:["une belle chanson","Mon frère","chante","sœur"], answer:"une belle chanson", explanation:"CVD = 'une belle chanson'."},
+    {question:"Paul offre un magnifique cadeau à Sophie pour son anniversaire. Quel est le CVD ?", options:["un magnifique cadeau","Paul","offre","Sophie"], answer:"un magnifique cadeau", explanation:"CVD = 'un magnifique cadeau'."},
+    {question:"Paul offre un magnifique cadeau à Sophie pour son anniversaire. Quel est le CVI ?", options:["à Sophie","un magnifique cadeau","offre","Paul"], answer:"à Sophie", explanation:"CVI = 'à Sophie'."},
+    {question:"Marie prépare un délicieux gâteau pour sa sœur demain. Quel est le CVD ?", options:["un délicieux gâteau","Marie","prépare","sœur"], answer:"un délicieux gâteau", explanation:"CVD = 'un délicieux gâteau'."}
+  ]}
+];
+
+let currentLevel=0;
+let currentQuestionIndex=0;
+let score=0;
+let userAnswers=[];
+
+function shuffleArray(array){return array.sort(()=>Math.random()-0.5);}
+
+function startQuiz(){
+  currentLevel=0;
+  score=0;
+  currentQuestionIndex=0;
+  userAnswers=[];
+  showQuestion();
+}
+
+function showQuestion(){
+  const level=levels[currentLevel];
+  const questionObj=level.questions[currentQuestionIndex];
+
+  document.getElementById("levelTitle").textContent=level.title;
+  document.getElementById("question").textContent=questionObj.question;
+
+  const optionsDiv=document.getElementById("options");
+  optionsDiv.innerHTML="";
+
+  const shuffledOptions=shuffleArray([...questionObj.options]);
+  shuffledOptions.forEach(opt=>{
+    const div=document.createElement("div");
+    div.className="option";
+    div.textContent=opt;
+    div.onclick=()=>checkAnswer(opt);
+    optionsDiv.appendChild(div);
+  });
+
+  document.getElementById("score").textContent=score;
+  document.getElementById("totalQuestions").textContent=level.questions.length;
+
+  updateProgress();
+}
+
+function checkAnswer(choice){
+  const level=levels[currentLevel];
+  const questionObj=level.questions[currentQuestionIndex];
+  const feedback=document.getElementById("feedback");
+
+  let correct = (choice===questionObj.answer);
+  userAnswers.push({level:currentLevel, question:questionObj.question, correct, explanation:questionObj.explanation});
+
+  if(correct){
+    score++;
+    feedback.innerHTML="✅ Bonne réponse !";
+  } else {
+    feedback.innerHTML="❌ Mauvaise réponse. La bonne réponse était : "+questionObj.answer;
+  }
+
+  currentQuestionIndex++;
+
+  setTimeout(()=>{
+    feedback.innerHTML="";
+    if(currentQuestionIndex<levels[currentLevel].questions.length){
+      showQuestion();
+    } else {
+      currentLevel++;
+      if(currentLevel<levels.length){
+        currentQuestionIndex=0;
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+  },1000);
+}
+
+function updateProgress(){
+  let totalQuestions=0;
+  for(const lvl of levels){totalQuestions+=lvl.questions.length;}
+  const progress=(levels.slice(0,currentLevel).reduce((sum,lvl)=>sum+lvl.questions.length,0)+currentQuestionIndex)/totalQuestions*100;
+  document.getElementById("progressBar").style.width=progress+"%";
+}
+
+function endQuiz(){
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("endScreen").classList.remove("hidden");
+  document.getElementById("finalScore").textContent="Ton score : "+score+" / "+levels.reduce((sum,lvl)=>sum+lvl.questions.length,0);
+
+  // Afficher correction détaillée par niveau
+  let correctionHTML = "";
+  levels.forEach((lvl, lvlIndex)=>{
+    correctionHTML += `<h3>${lvl.title}</h3><ul>`;
+    lvl.questions.forEach((q, qIndex)=>{
+      const userAns = userAnswers.find(a=>a.question===q.question);
+      correctionHTML += `<li>${q.question}<br>`;
+      if(userAns.correct){
+        correctionHTML += `<span class="correct">✅ Correct</span> - ${q.explanation}</li>`;
+      } else {
+        correctionHTML += `<span class="incorrect">❌ Incorrect</span> - ${q.explanation}</li>`;
+      }
+    });
+    correctionHTML += "</ul>";
+  });
+  document.getElementById("detailedCorrection").innerHTML = correctionHTML;
+}
+
+function restartQuiz(){
+  document.getElementById("quiz").classList.remove("hidden");
+  document.getElementById("endScreen").classList.add("hidden");
+  currentLevel=0;
+  currentQuestionIndex=0;
+  score=0;
+  userAnswers=[];
+  showQuestion();
+}
+
+startQuiz();
+</script>
+</body>
+</html>
